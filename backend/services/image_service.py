@@ -296,6 +296,9 @@ class NanoBananaService:
 
     def _download_image(self, image_url: str) -> str:
         """下载图片到本地"""
+        from PIL import Image
+        import io
+        
         # 从 URL 提取文件名
         filename = image_url.split('/')[-1].split('?')[0]
         if not filename or '.' not in filename:
@@ -306,10 +309,70 @@ class NanoBananaService:
         response = requests.get(image_url, timeout=30)
         response.raise_for_status()
 
-        with open(file_path, 'wb') as f:
-            f.write(response.content)
+        image_data = response.content
+        
+        # 检查文件大小，如果超过 1MB 则压缩
+        if len(image_data) > 1024 * 1024:  # 1MB
+            logger.info(f"图片大小 {len(image_data) / 1024 / 1024:.2f}MB，开始压缩...")
+            try:
+                # 打开图片
+                img = Image.open(io.BytesIO(image_data))
+                original_size = img.size
+                
+                # 转换为 RGB（如果是 RGBA，JPEG 不支持透明通道）
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # 方案1: 使用 JPEG 格式，逐步降低质量
+                quality = 90
+                while quality >= 30:
+                    output = io.BytesIO()
+                    img.save(output, format='JPEG', quality=quality, optimize=True)
+                    compressed_data = output.getvalue()
+                    
+                    if len(compressed_data) <= 1024 * 1024:
+                        image_data = compressed_data
+                        # 更新文件名为 .jpg
+                        if filename.lower().endswith('.png'):
+                            filename = filename[:-4] + '.jpg'
+                            file_path = os.path.join(self.output_folder, filename)
+                        logger.info(f"压缩完成: {len(image_data) / 1024 / 1024:.2f}MB (quality={quality})")
+                        break
+                    
+                    quality -= 10
+                else:
+                    # 方案2: 质量压缩不够，同时缩小尺寸
+                    scale = 0.8
+                    while scale >= 0.3:
+                        new_size = (int(original_size[0] * scale), int(original_size[1] * scale))
+                        resized_img = img.resize(new_size, Image.Resampling.LANCZOS)
+                        
+                        output = io.BytesIO()
+                        resized_img.save(output, format='JPEG', quality=70, optimize=True)
+                        compressed_data = output.getvalue()
+                        
+                        if len(compressed_data) <= 1024 * 1024:
+                            image_data = compressed_data
+                            if filename.lower().endswith('.png'):
+                                filename = filename[:-4] + '.jpg'
+                                file_path = os.path.join(self.output_folder, filename)
+                            logger.info(f"压缩完成: {len(image_data) / 1024 / 1024:.2f}MB (scale={scale:.0%})")
+                            break
+                        
+                        scale -= 0.1
+                    else:
+                        logger.warning(f"无法将图片压缩到 1MB 以下，使用最小尺寸版本")
+                        image_data = compressed_data
+                    
+            except Exception as e:
+                logger.warning(f"图片压缩失败: {e}，使用原始图片")
 
-        logger.info(f"图片已保存: {file_path}")
+        with open(file_path, 'wb') as f:
+            f.write(image_data)
+
+        logger.info(f"图片已保存: {file_path} (大小: {len(image_data) / 1024 / 1024:.2f}MB)")
         return file_path
 
 

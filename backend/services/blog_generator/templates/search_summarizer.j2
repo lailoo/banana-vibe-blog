@@ -1,0 +1,15 @@
+请根据以下搜索结果，提取与知识空白相关的关键信息，生成简洁的知识摘要。
+
+## 需要补充的知识空白
+{% for gap in gaps %}
+- {{ gap.description | default('') }}
+{% endfor %}
+
+## 搜索结果
+{% for result in results[:5] %}
+### {{ result.title | default('无标题') }}
+{{ result.content | default('') | truncate(500) }}
+
+{% endfor %}
+
+请提取关键信息，生成 200-400 字的知识摘要，重点补充上述空白点。直接输出摘要内容，不要添加标题或格式说明。

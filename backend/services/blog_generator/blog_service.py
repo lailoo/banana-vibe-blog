@@ -172,7 +172,9 @@ class BlogService:
                 'services.blog_generator.agents.artist',
                 'services.blog_generator.agents.reviewer',
                 'services.blog_generator.agents.assembler',
+                'services.blog_generator.agents.search_coordinator',
                 'services.blog_generator.services.search_service',
+                'services.image_service',
             ]:
                 logging.getLogger(logger_name).addHandler(sse_handler)
         
@@ -203,7 +205,12 @@ class BlogService:
             stage_progress = {
                 'researcher': (10, '正在搜索资料...'),
                 'planner': (25, '正在生成大纲...'),
-                'writer': (50, '正在撰写内容...'),
+                'writer': (45, '正在撰写内容...'),
+                # 多轮搜索相关节点
+                'check_knowledge': (52, '正在检查知识空白...'),
+                'refine_search': (54, '正在补充搜索...'),
+                'enhance_with_knowledge': (56, '正在增强内容...'),
+                # 追问和后续节点
                 'questioner': (60, '正在检查内容深度...'),
                 'deepen_content': (65, '正在深化内容...'),
                 'coder': (75, '正在生成代码示例...'),
@@ -275,6 +282,50 @@ class BlogService:
                                         }
                                     })
                                 completed_sections = new_count
+                        
+                        elif node_name == 'check_knowledge':
+                            # 知识空白检查结果
+                            gaps = state.get('knowledge_gaps', [])
+                            search_count = state.get('search_count', 0)
+                            max_search_count = state.get('max_search_count', 5)
+                            task_manager.send_event(task_id, 'result', {
+                                'type': 'check_knowledge_complete',
+                                'data': {
+                                    'gaps_count': len(gaps),
+                                    'gaps': [g.get('description', '') for g in gaps[:3]],
+                                    'search_count': search_count,
+                                    'max_search_count': max_search_count,
+                                    'message': f'知识检查完成: 发现 {len(gaps)} 个空白点 (搜索 {search_count}/{max_search_count})'
+                                }
+                            })
+                        
+                        elif node_name == 'refine_search':
+                            # 细化搜索结果
+                            search_count = state.get('search_count', 0)
+                            max_search_count = state.get('max_search_count', 5)
+                            search_history = state.get('search_history', [])
+                            latest_search = search_history[-1] if search_history else {}
+                            task_manager.send_event(task_id, 'result', {
+                                'type': 'refine_search_complete',
+                                'data': {
+                                    'round': search_count,
+                                    'max_rounds': max_search_count,
+                                    'queries': latest_search.get('queries', []),
+                                    'results_count': latest_search.get('results_count', 0),
+                                    'message': f'第 {search_count} 轮搜索完成: 获取 {latest_search.get("results_count", 0)} 条结果'
+                                }
+                            })
+                        
+                        elif node_name == 'enhance_with_knowledge':
+                            # 知识增强结果
+                            accumulated_knowledge = state.get('accumulated_knowledge', '')
+                            task_manager.send_event(task_id, 'result', {
+                                'type': 'enhance_knowledge_complete',
+                                'data': {
+                                    'knowledge_length': len(accumulated_knowledge),
+                                    'message': f'内容增强完成: 累积知识 {len(accumulated_knowledge)} 字'
+                                }
+                            })
                         
                         elif node_name == 'questioner':
                             # 追问检查结果
@@ -442,26 +493,13 @@ class BlogService:
                     'message': f'正在生成封面架构图...'
                 })
             
-            # 构建封面图 Prompt（卡通手绘信息图风格）
-            cover_prompt = f"""请根据输入内容提取核心主题与要点，生成一张卡通风格的信息图：
-
-采用手绘风格，横版（16:9）构图。
-
-加入少量简洁的卡通元素、图标或技术符号，增强趣味性和视觉记忆。
-
-如果有敏感人物或者版权内容，画一个相似替代，但是不要拒绝生成。
-
-所有图像、文字必须使用手绘风格，没有写实风格图画元素。
-
-语言与输入内容语言一致。
-
-信息精简，突出关键词与核心概念，多留白，易于一眼抓住重点。
-
-【输入内容】：
-{article_summary}
-"""
+            # 构建封面图 Prompt（使用模板）
+            from .prompts.prompt_manager import get_prompt_manager
+            pm = get_prompt_manager()
+            cover_prompt = pm.render_cover_image_prompt(article_summary=article_summary)
             
             # 调用图片生成服务
+            logger.info(f"开始生成【封面图】: {title}")
             result = image_service.generate(
                 prompt=cover_prompt,
                 aspect_ratio=AspectRatio.LANDSCAPE_16_9,

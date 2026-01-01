@@ -17,6 +17,7 @@ from .agents.artist import ArtistAgent
 from .agents.questioner import QuestionerAgent
 from .agents.reviewer import ReviewerAgent
 from .agents.assembler import AssemblerAgent
+from .agents.search_coordinator import SearchCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class BlogGenerator:
         self.questioner = QuestionerAgent(llm_client)
         self.reviewer = ReviewerAgent(llm_client)
         self.assembler = AssemblerAgent()
+        self.search_coordinator = SearchCoordinator(llm_client, search_service)
         
         # 构建工作流
         self.workflow = self._build_workflow()
@@ -76,6 +78,11 @@ class BlogGenerator:
         workflow.add_node("researcher", self._researcher_node)
         workflow.add_node("planner", self._planner_node)
         workflow.add_node("writer", self._writer_node)
+        # 多轮搜索相关节点
+        workflow.add_node("check_knowledge", self._check_knowledge_node)
+        workflow.add_node("refine_search", self._refine_search_node)
+        workflow.add_node("enhance_with_knowledge", self._enhance_with_knowledge_node)
+        # 追问和审核节点
         workflow.add_node("questioner", self._questioner_node)
         workflow.add_node("deepen_content", self._deepen_content_node)
         workflow.add_node("coder", self._coder_node)
@@ -88,7 +95,23 @@ class BlogGenerator:
         workflow.add_edge(START, "researcher")
         workflow.add_edge("researcher", "planner")
         workflow.add_edge("planner", "writer")
-        workflow.add_edge("writer", "questioner")
+        
+        # Writer 后进入知识空白检查
+        workflow.add_edge("writer", "check_knowledge")
+        
+        # 条件边：检查后决定是搜索还是继续到 Questioner
+        workflow.add_conditional_edges(
+            "check_knowledge",
+            self._should_refine_search,
+            {
+                "search": "refine_search",
+                "continue": "questioner"
+            }
+        )
+        
+        # 搜索后增强内容，然后回到知识检查
+        workflow.add_edge("refine_search", "enhance_with_knowledge")
+        workflow.add_edge("enhance_with_knowledge", "check_knowledge")
         
         # 条件边：追问后决定是深化还是继续
         workflow.add_conditional_edges(
@@ -132,7 +155,83 @@ class BlogGenerator:
     def _writer_node(self, state: SharedState) -> SharedState:
         """内容撰写节点"""
         logger.info("=== Step 3: 内容撰写 ===")
-        return self.writer.run(state)
+        result = self.writer.run(state)
+        # 初始化累积知识（首次写作后）
+        if not result.get('accumulated_knowledge'):
+            result['accumulated_knowledge'] = result.get('background_knowledge', '')
+        return result
+    
+    def _check_knowledge_node(self, state: SharedState) -> SharedState:
+        """知识空白检查节点"""
+        search_count = state.get('search_count', 0)
+        max_count = state.get('max_search_count', 5)
+        logger.info(f"=== Step 3.5: 知识空白检查 (搜索次数: {search_count}/{max_count}) ===")
+        return self.search_coordinator.run(state)
+    
+    def _refine_search_node(self, state: SharedState) -> SharedState:
+        """细化搜索节点"""
+        search_count = state.get('search_count', 0) + 1
+        max_count = state.get('max_search_count', 5)
+        logger.info(f"=== Step 3.6: 细化搜索 (第 {search_count} 轮) ===")
+        
+        gaps = state.get('knowledge_gaps', [])
+        result = self.search_coordinator.refine_search(gaps, state)
+        
+        if result.get('success'):
+            logger.info(f"细化搜索完成: 获取 {len(result.get('results', []))} 条结果")
+        else:
+            logger.warning(f"细化搜索失败: {result.get('reason', '未知原因')}")
+        
+        return state
+    
+    def _enhance_with_knowledge_node(self, state: SharedState) -> SharedState:
+        """基于新知识增强内容节点"""
+        logger.info("=== Step 3.7: 知识增强 ===")
+        
+        sections = state.get('sections', [])
+        gaps = state.get('knowledge_gaps', [])
+        new_knowledge = state.get('accumulated_knowledge', '')
+        
+        if not gaps or not new_knowledge:
+            logger.info("没有需要增强的内容")
+            return state
+        
+        from .prompts.prompt_manager import get_prompt_manager
+        pm = get_prompt_manager()
+        
+        # 找出需要增强的章节（根据 gaps 中的 section_id 或全部增强）
+        enhanced_count = 0
+        for section in sections:
+            # 检查该章节是否有相关的知识空白
+            section_gaps = [g for g in gaps if not g.get('section_id') or g.get('section_id') == section.get('id')]
+            
+            if section_gaps:
+                original_content = section.get('content', '')
+                
+                prompt = pm.render_writer_enhance_with_knowledge(
+                    original_content=original_content,
+                    new_knowledge=new_knowledge,
+                    knowledge_gaps=section_gaps
+                )
+                
+                try:
+                    enhanced_content = self.writer.llm.chat(
+                        messages=[{"role": "user", "content": prompt}]
+                    )
+                    section['content'] = enhanced_content
+                    enhanced_count += 1
+                    logger.info(f"章节增强完成: {section.get('title', '')}")
+                except Exception as e:
+                    logger.error(f"章节增强失败: {e}")
+        
+        logger.info(f"知识增强完成: {enhanced_count} 个章节")
+        
+        # 清空已处理的知识空白
+        state['knowledge_gaps'] = []
+        
+        return state
+    
+    
     
     def _questioner_node(self, state: SharedState) -> SharedState:
         """追问检查节点"""
@@ -239,6 +338,23 @@ class BlogGenerator:
             if state.get('revision_count', 0) < self.max_revision_rounds:
                 return "revision"
         return "assemble"
+
+    def _should_refine_search(self, state: SharedState) -> Literal["search", "continue"]:
+        """判断是否需要细化搜索"""
+        gaps = state.get('knowledge_gaps', [])
+        search_count = state.get('search_count', 0)
+        max_count = state.get('max_search_count', 5)
+        
+        # 有知识空白且未达到搜索上限
+        if gaps and search_count < max_count:
+            # 检查是否有重要的空白（missing_data 或 vague_concept）
+            important_gaps = [g for g in gaps if g.get('gap_type') in ['missing_data', 'vague_concept']]
+            if important_gaps:
+                logger.info(f"检测到 {len(important_gaps)} 个重要知识空白，触发细化搜索")
+                return "search"
+        
+        logger.info("无需细化搜索，继续到追问阶段")
+        return "continue"
     
     def compile(self, checkpointer=None):
         """

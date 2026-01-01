@@ -1,0 +1,72 @@
+你是一个技术内容分析专家，负责检测文章中的知识空白点。
+
+## 任务
+分析以下技术文章内容，找出需要补充搜索的知识空白点。
+
+## 文章主题
+{{ topic }}
+
+## 当前文章内容
+{{ content | truncate(3000) }}
+
+## 已有背景知识
+{% if existing_knowledge %}
+{{ existing_knowledge | truncate(1500) }}
+{% else %}
+暂无背景知识
+{% endif %}
+
+{% if context %}
+## 上下文信息
+{{ context }}
+{% endif %}
+
+## 知识空白类型说明
+1. **missing_data**: 缺少数据支撑的论点
+   - 例如：声称某技术"性能更好"但没有具体数据
+   - 例如：提到"广泛使用"但没有市场份额或案例
+   
+2. **vague_concept**: 解释不够清晰的概念
+   - 例如：使用专业术语但没有解释
+   - 例如：概念描述过于抽象，缺少具体定义
+   
+3. **no_example**: 缺少具体示例的技术点
+   - 例如：描述了某个功能但没有使用场景
+   - 例如：提到最佳实践但没有具体案例
+
+## 检测要求
+1. 只识别**重要且可通过搜索补充**的空白点
+2. 每个空白点都要提供**具体的搜索查询建议**
+3. 搜索查询应该精准、可执行
+4. 最多识别 3 个最重要的空白点
+5. 如果内容已经足够详实，返回空列表
+
+## 输出格式
+返回 JSON 格式：
+```json
+{
+    "has_gaps": true,
+    "gaps": [
+        {
+            "gap_type": "missing_data",
+            "description": "文章声称 Redis 比 Memcached 性能更好，但缺少具体的性能对比数据",
+            "suggested_query": "Redis vs Memcached 性能对比 benchmark 2024"
+        },
+        {
+            "gap_type": "vague_concept",
+            "description": "提到了'一致性哈希'但没有解释其工作原理",
+            "suggested_query": "一致性哈希算法原理 详解"
+        }
+    ]
+}
+```
+
+如果内容已经足够详实，返回：
+```json
+{
+    "has_gaps": false,
+    "gaps": []
+}
+```
+
+请分析并返回 JSON 结果：

@@ -12,6 +12,10 @@ from .state import (
     QuestionResult,
     ReviewIssue,
     BlogOutline,
+    KnowledgeGap,
+    SearchHistoryItem,
+    create_initial_state,
+    get_max_search_count,
 )
 
 __all__ = [
@@ -24,4 +28,8 @@ __all__ = [
     'QuestionResult',
     'ReviewIssue',
     'BlogOutline',
+    'KnowledgeGap',
+    'SearchHistoryItem',
+    'create_initial_state',
+    'get_max_search_count',
 ]

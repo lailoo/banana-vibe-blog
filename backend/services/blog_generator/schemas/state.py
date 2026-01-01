@@ -2,6 +2,7 @@
 共享状态和数据模型定义
 """
 
+import os
 from typing import TypedDict, List, Optional, Literal
 from pydantic import BaseModel, Field
 
@@ -96,6 +97,22 @@ class SearchResult(BaseModel):
     relevance_score: float = 0.0
 
 
+class KnowledgeGap(BaseModel):
+    """知识空白点"""
+    gap_type: Literal["missing_data", "vague_concept", "no_example"]
+    description: str
+    suggested_query: str
+    section_id: Optional[str] = None
+
+
+class SearchHistoryItem(BaseModel):
+    """搜索历史记录"""
+    round: int  # 第几轮搜索
+    queries: List[str]  # 本轮搜索的查询
+    results_count: int  # 结果数量
+    gaps_addressed: List[str]  # 本轮解决的知识空白
+
+
 class SharedState(TypedDict):
     """Multi-Agent 共享状态"""
     
@@ -111,6 +128,13 @@ class SharedState(TypedDict):
     background_knowledge: Optional[str]  # 背景知识摘要
     key_concepts: List[str]  # 提取的核心概念
     reference_links: List[str]  # 参考链接
+    
+    # 多轮搜索相关
+    search_count: int  # 当前搜索次数
+    max_search_count: int  # 最大搜索次数
+    search_history: List[dict]  # 搜索历史记录
+    knowledge_gaps: List[dict]  # 检测到的知识空白
+    accumulated_knowledge: str  # 累积的背景知识
     
     # 大纲 (Planner 输出)
     outline: Optional[dict]
@@ -144,6 +168,23 @@ class SharedState(TypedDict):
     error: Optional[str]
 
 
+def get_max_search_count(target_length: str) -> int:
+    """
+    根据文章长度获取最大搜索次数
+    
+    可通过环境变量配置：
+    - MULTI_SEARCH_MAX_SHORT: 短文最大搜索次数，默认 3
+    - MULTI_SEARCH_MAX_MEDIUM: 中等文章最大搜索次数，默认 5
+    - MULTI_SEARCH_MAX_LONG: 长文最大搜索次数，默认 8
+    """
+    max_search_map = {
+        'short': int(os.getenv('MULTI_SEARCH_MAX_SHORT', '3')),
+        'medium': int(os.getenv('MULTI_SEARCH_MAX_MEDIUM', '5')),
+        'long': int(os.getenv('MULTI_SEARCH_MAX_LONG', '8'))
+    }
+    return max_search_map.get(target_length, max_search_map['medium'])
+
+
 def create_initial_state(
     topic: str,
     article_type: str = "tutorial",
@@ -162,6 +203,13 @@ def create_initial_state(
         background_knowledge=None,
         key_concepts=[],
         reference_links=[],
+        # 多轮搜索相关
+        search_count=0,
+        max_search_count=get_max_search_count(target_length),
+        search_history=[],
+        knowledge_gaps=[],
+        accumulated_knowledge="",
+        # 其他字段
         outline=None,
         sections=[],
         code_blocks=[],

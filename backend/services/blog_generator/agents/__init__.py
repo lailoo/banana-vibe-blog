@@ -10,6 +10,7 @@ from .artist import ArtistAgent
 from .questioner import QuestionerAgent
 from .reviewer import ReviewerAgent
 from .assembler import AssemblerAgent
+from .search_coordinator import SearchCoordinator
 
 __all__ = [
     'ResearcherAgent',
@@ -20,4 +21,5 @@ __all__ = [
     'QuestionerAgent',
     'ReviewerAgent',
     'AssemblerAgent',
+    'SearchCoordinator',
 ]

@@ -258,6 +258,55 @@ class PromptManager:
             next_steps=next_steps or '',
             reference_links=reference_links or []
         )
+    
+    def render_knowledge_gap_detector(
+        self,
+        content: str,
+        existing_knowledge: str,
+        context: str = "",
+        topic: str = ""
+    ) -> str:
+        """渲染知识空白检测 Prompt"""
+        return self.render(
+            'knowledge_gap_detector',
+            content=content,
+            existing_knowledge=existing_knowledge,
+            context=context,
+            topic=topic
+        )
+    
+    def render_writer_enhance_with_knowledge(
+        self,
+        original_content: str,
+        new_knowledge: str,
+        knowledge_gaps: list
+    ) -> str:
+        """渲染基于新知识增强内容的 Prompt"""
+        return self.render(
+            'writer_enhance_knowledge',
+            original_content=original_content,
+            new_knowledge=new_knowledge,
+            knowledge_gaps=knowledge_gaps or []
+        )
+    
+    def render_cover_image_prompt(self, article_summary: str) -> str:
+        """渲染封面图生成 Prompt"""
+        return self.render(
+            'cover_image_prompt',
+            article_summary=article_summary
+        )
+    
+    def render_search_summarizer(
+        self,
+        gaps: list,
+        results: list
+    ) -> str:
+        """渲染搜索结果摘要 Prompt"""
+        return self.render(
+            'search_summarizer',
+            gaps=gaps or [],
+            results=results or []
+        )
 
 
 # 全局实例
