@@ -1,10 +1,9 @@
 {
   "buildCommand": "pip install -r backend/requirements.txt",
+  "installCommand": "pip install -r backend/requirements.txt",
   "framework": "python",
   "python": {
     "version": "3.11"
   },
-  "env": {
-    "PYTHON_VERSION": "3.11"
-  }
+  "root": "backend"
 }
