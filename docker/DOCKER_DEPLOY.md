@@ -2,6 +2,14 @@
 
 本文档说明如何使用 Docker 一键部署 vibe-blog 应用。
 
+常用命令: 
+```
+cd ~/vibe-blog
+git pull
+docker compose -f docker/docker-compose.yml down
+docker compose -f docker/docker-compose.yml up -d --build
+```
+
 ## 前置条件
 
 - 安装 Docker（[下载地址](https://www.docker.com/products/docker-desktop)）

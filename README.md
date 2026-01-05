@@ -532,7 +532,7 @@ banana-blog/
 
 如需在线体验，可以扫描入群（在线访问域名正在申请中...）
 
-![alt text](project-wechat.png)
+![alt text](./logo/project-wechat.png)
 
 ## 关注我们
 
