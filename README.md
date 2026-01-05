@@ -528,6 +528,12 @@ banana-blog/
 - 如果你对 Datawhale 很感兴趣并想要发起一个新的项目，请按照[Datawhale开源项目指南](https://github.com/datawhalechina/DOPMC/blob/main/GUIDE.md)进行操作即可~
 
 
+## 项目内测群: 
+
+如需在线体验，可以扫描入群（在线访问域名正在申请中...）
+
+![alt text](project-wechat.png)
+
 ## 关注我们
 
 <div align=center>
