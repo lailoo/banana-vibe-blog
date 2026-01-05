@@ -66,7 +66,7 @@ class NanoBananaService:
     def __init__(
         self,
         api_key: str,
-        api_base: str = "https://api.grsai.com",
+        api_base: str = "https://grsai.dakka.com.cn",
         model: str = "nano-banana-pro",
         output_folder: str = "outputs/images"
     ):
@@ -404,7 +404,7 @@ def init_image_service(config: dict) -> Optional[NanoBananaService]:
     
     _image_service = NanoBananaService(
         api_key=api_key,
-        api_base=config.get('NANO_BANANA_API_BASE', 'https://api.grsai.com'),
+        api_base=config.get('NANO_BANANA_API_BASE', 'https://grsai.dakka.com.cn'),
         model=config.get('NANO_BANANA_MODEL', 'nano-banana-pro'),
         output_folder=config.get('IMAGE_OUTPUT_FOLDER', 'outputs/images')
     )

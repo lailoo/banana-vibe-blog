@@ -263,7 +263,7 @@ python app.py
 ### API Endpoints
 - **Text Model**: OpenAI-compatible API format
 - **Search Service**: `https://open.bigmodel.cn/api/paas/v4/web_search`
-- **Image Generation**: `https://api.grsai.com`
+- **Image Generation**: `https://grsai.dakka.com.cn` (China direct)
 
 ### Frontend Tech Stack
 - **Rendering**: Native HTML + JavaScript

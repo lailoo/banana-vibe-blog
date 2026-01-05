@@ -339,7 +339,7 @@ ZAI_SEARCH_API_KEY=your-zhipu-api-key
 
 # Nano Banana Pro API（可选，用于 AI 封面图）
 NANO_BANANA_API_KEY=your-nano-banana-api-key
-NANO_BANANA_API_BASE=https://api.grsai.com
+NANO_BANANA_API_BASE=https://grsai.dakka.com.cn
 ```
 
 4. **启动服务**
@@ -365,7 +365,7 @@ python app.py
 ### API 调用端点
 - **文本模型**：OpenAI 兼容 API 格式
 - **搜索服务**：`https://open.bigmodel.cn/api/paas/v4/web_search`
-- **图片生成**：我这里使用的是grsai模型服务: `https://api.grsai.com`
+- **图片生成**：我这里使用的是grsai模型服务: `https://grsai.dakka.com.cn`（国内直连）
 
 ### 前端技术栈
 - **渲染**：原生 HTML + JavaScript
@@ -474,7 +474,7 @@ banana-blog/
 | 变量名 | 说明 | 示例值 |
 |--------|------|--------|
 | `NANO_BANANA_API_KEY` | Nano Banana API Key | sk-xxx |
-| `NANO_BANANA_API_BASE` | Nano Banana API 基础 URL | https://api.grsai.com |
+| `NANO_BANANA_API_BASE` | Nano Banana API 基础 URL | https://grsai.dakka.com.cn |
 | `NANO_BANANA_MODEL` | Nano Banana 模型名称 | nano-banana-pro |
 
 ### 搜索配置（智谱 Web Search）
