@@ -101,15 +101,20 @@ class SearchService:
             }
             
             logger.info(f"调用智谱 Web Search API: {query}")
+            logger.info(f"API URL: {url}")
+            logger.info(f"请求参数: {json.dumps(payload, ensure_ascii=False)}")
+            
             response = requests.post(url, json=payload, headers=headers, timeout=30)
+            logger.info(f"API 响应状态码: {response.status_code}")
             response.raise_for_status()
             
             data = response.json()
-            logger.info(f"智谱搜索响应: {json.dumps(data, ensure_ascii=False)[:500]}")
+            logger.info(f"智谱搜索完整响应: {json.dumps(data, ensure_ascii=False)}")
             
             # 解析搜索结果（统一格式）
             parsed_results = []
             search_results = data.get('search_result', [])
+            logger.info(f"搜索结果数量: {len(search_results)}")
             
             for item in search_results:
                 parsed_results.append({
