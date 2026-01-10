@@ -139,6 +139,7 @@ class VaguePoint:
     issue: str                          # 问题描述
     question: str                       # 追问问题
     suggestion: str                     # 建议补充内容
+    original_text: str = ""             # 原文文本（用于精确定位）
 
 
 @dataclass

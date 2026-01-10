@@ -212,7 +212,8 @@ class ReviewerService:
         self, 
         tutorial_id: int,
         on_progress: Callable[[Dict], None] = None,
-        max_chapters: int = 50
+        max_chapters: int = 50,
+        force_reevaluate: bool = False
     ) -> Dict:
         """
         评估教程 (同步版本)
@@ -221,6 +222,7 @@ class ReviewerService:
             tutorial_id: 教程 ID
             on_progress: 进度回调函数
             max_chapters: 最大评估章节数
+            force_reevaluate: 强制重新评估（忽略增量更新）
             
         Returns:
             评估结果
@@ -274,12 +276,17 @@ class ReviewerService:
             
             # ========== Step 3: 创建/更新章节记录 ==========
             chapters_to_evaluate = []
-            for md_file in md_files:
-                # 检查是否已存在且未变化 (增量更新)
-                existing = ChapterModel.get_by_hash(tutorial_id, md_file.content_hash)
-                if existing and existing.get('status') == 'completed':
-                    logger.debug(f"章节未变化，跳过: {md_file.file_path}")
-                    continue
+            for idx, md_file in enumerate(md_files):
+                # 检查是否已存在且内容未变化 (增量更新)
+                # force_reevaluate 只对当前选中的章节生效（前 max_chapters 个）
+                should_force = force_reevaluate and idx < max_chapters
+                
+                if not should_force:
+                    existing = ChapterModel.get_by_hash(tutorial_id, md_file.content_hash)
+                    if existing and existing.get('status') == 'completed':
+                        emit("log", level="info", message=f"   ⏭️ 章节未变化，跳过: {md_file.file_path}")
+                        logger.debug(f"章节未变化，跳过: {md_file.file_path}")
+                        continue
                 
                 # 创建或更新章节
                 chapter_id = ChapterModel.create(
@@ -291,6 +298,9 @@ class ReviewerService:
                     raw_content=md_file.content,
                     content_hash=md_file.content_hash,
                 )
+                
+                # 删除该章节的旧问题（重新评估时覆盖）
+                IssueModel.delete_by_chapter(chapter_id)
                 
                 chapters_to_evaluate.append({
                     'id': chapter_id,

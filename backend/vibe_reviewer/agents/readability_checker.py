@@ -124,6 +124,7 @@ class ReadabilityChecker:
                     location=issue.get('location', ''),
                     description=issue.get('description', ''),
                     suggestion=issue.get('suggestion', ''),
+                    original_text=issue.get('original_text', ''),
                 ))
             
             # 如果有专业指标，优先使用专业指标的分数

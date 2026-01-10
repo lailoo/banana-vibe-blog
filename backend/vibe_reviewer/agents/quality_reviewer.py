@@ -86,6 +86,7 @@ class QualityReviewer:
                     location=issue.get('location', ''),
                     description=issue.get('description', ''),
                     suggestion=issue.get('suggestion', ''),
+                    original_text=issue.get('original_text', ''),
                     reference=issue.get('reference'),
                 ))
             

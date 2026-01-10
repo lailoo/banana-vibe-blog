@@ -1160,6 +1160,8 @@
             if (!currentTutorialId) return;
             
             const maxAllowed = systemConfig.max_chapters || 5;
+            const forceReevaluate = confirm('是否强制重新评估选中的章节？\n\n点击"确定"：强制重新评估（忽略缓存）\n点击"取消"：只评估内容有变化的章节\n\n注意：只影响本次选中的章节，其他章节结果不变');
+            
             const inputValue = prompt(`请输入要评估的章节数 (最大 ${maxAllowed}):`, String(maxAllowed));
             if (inputValue === null) return;
             
@@ -1183,7 +1185,7 @@
             }
             
             // 建立 SSE 连接
-            const url = `/api/reviewer/tutorials/${currentTutorialId}/evaluate-stream?max_chapters=${maxChapters}`;
+            const url = `/api/reviewer/tutorials/${currentTutorialId}/evaluate-stream?max_chapters=${maxChapters}&force=${forceReevaluate}`;
             eventSource = new EventSource(url);
             
             eventSource.onmessage = (event) => {

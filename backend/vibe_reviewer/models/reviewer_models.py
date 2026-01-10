@@ -41,6 +41,17 @@ def init_reviewer_tables(db_path: str = None):
     # 创建表
     with get_connection() as conn:
         conn.executescript(SCHEMA_SQL)
+        
+        # 数据库迁移：添加新列（如果不存在）
+        try:
+            # 检查 original_text 列是否存在
+            cursor = conn.execute("PRAGMA table_info(reviewer_issues)")
+            columns = [row[1] for row in cursor.fetchall()]
+            if 'original_text' not in columns:
+                conn.execute("ALTER TABLE reviewer_issues ADD COLUMN original_text TEXT")
+                logger.info("数据库迁移：添加 original_text 列")
+        except Exception as e:
+            logger.debug(f"数据库迁移检查: {e}")
     
     logger.info(f"vibe-reviewer 数据库已初始化: {_db_path}")
 
@@ -185,6 +196,7 @@ CREATE TABLE IF NOT EXISTS reviewer_issues (
     description     TEXT NOT NULL,
     suggestion      TEXT,
     reference       TEXT,
+    original_text   TEXT,
     
     -- 优先级
     priority        INTEGER DEFAULT 5,
@@ -504,16 +516,17 @@ class IssueModel:
     def create(chapter_id: int, tutorial_id: int, category: str, issue_type: str,
                severity: str, location: str, description: str, 
                suggestion: str = None, reference: str = None,
+               original_text: str = None,
                priority: int = 5, estimated_effort: str = "medium") -> int:
         """创建问题"""
         with get_connection() as conn:
             cursor = conn.execute('''
                 INSERT INTO reviewer_issues 
                 (chapter_id, tutorial_id, category, issue_type, severity, location, 
-                 description, suggestion, reference, priority, estimated_effort)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 description, suggestion, reference, original_text, priority, estimated_effort)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (chapter_id, tutorial_id, category, issue_type, severity, location,
-                  description, suggestion, reference, priority, estimated_effort))
+                  description, suggestion, reference, original_text, priority, estimated_effort))
             return cursor.lastrowid
     
     @staticmethod

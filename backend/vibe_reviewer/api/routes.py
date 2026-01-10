@@ -222,6 +222,7 @@ def evaluate_tutorial_stream(tutorial_id):
         # 获取参数 (从 URL 查询参数)
         default_max = int(os.environ.get('REVIEWER_MAX_CHAPTERS', 5))
         max_chapters = request.args.get('max_chapters', default_max, type=int)
+        force_reevaluate = request.args.get('force', 'false').lower() == 'true'
         # 0 表示全部评估
         if max_chapters == 0:
             max_chapters = 1000  # 实际上不限制
@@ -244,6 +245,7 @@ def evaluate_tutorial_stream(tutorial_id):
                     tutorial_id=tutorial_id,
                     on_progress=on_progress,
                     max_chapters=max_chapters,
+                    force_reevaluate=force_reevaluate,
                 )
                 queue.put({'type': 'complete', 'result': result})
             except Exception as e:

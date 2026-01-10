@@ -85,6 +85,7 @@ class DepthChecker:
                     issue=vp.get('issue', ''),
                     question=vp.get('question', ''),
                     suggestion=vp.get('suggestion', ''),
+                    original_text=vp.get('original_text', ''),
                 ))
             
             return DepthCheckResult(
