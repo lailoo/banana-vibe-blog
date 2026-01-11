@@ -153,7 +153,9 @@ class BlogGenerator:
     def _planner_node(self, state: SharedState) -> SharedState:
         """大纲规划节点"""
         logger.info("=== Step 2: 大纲规划 ===")
-        return self.planner.run(state)
+        # 使用实例变量中的流式回调
+        on_stream = getattr(self, '_outline_stream_callback', None)
+        return self.planner.run(state, on_stream=on_stream)
     
     def _writer_node(self, state: SharedState) -> SharedState:
         """内容撰写节点"""

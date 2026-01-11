@@ -784,6 +784,15 @@
             });
         });
 
+        // 恢复生成按钮状态
+        function resetCreateBtn() {
+            const btn = document.getElementById('createBlogBtn');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.textContent = '✨ 生成博客';
+        }
+
         // 添加进度项
         function addProgressItem(message, type = 'info', detail = '') {
             const body = document.getElementById('progressBody');
@@ -963,15 +972,25 @@
             }
             addProgressItem('⏹️ 已停止生成', 'error');
             document.getElementById('statusBadge').textContent = '已停止';
+            resetCreateBtn();
         });
 
         // 长文博客生成按钮
         document.getElementById('createBlogBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('createBlogBtn');
+            if (btn.disabled) return;
+            
             const topic = document.getElementById('contentInput').value.trim();
             if (!topic) {
                 alert('请输入技术主题');
                 return;
             }
+
+            // 禁用按钮
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.textContent = '⏳ 生成中...';
 
             // 显示进度面板
             const progressPanel = document.getElementById('progressPanel');
@@ -1066,6 +1085,7 @@
                     addProgressItem(`🎉 ${taskName}生成完成！`, 'success');
                     document.getElementById('statusBadge').textContent = '已完成';
                     document.getElementById('progressText').textContent = '生成完成';
+                    resetCreateBtn();
                     
                     // 根据类型显示不同的结果
                     if (isStorybook) {
@@ -1081,14 +1101,16 @@
                     eventSource = null;
                 });
 
+                // 大纲流式推送（博客和绘本通用）
+                eventSource.addEventListener('stream', (e) => {
+                    const d = JSON.parse(e.data);
+                    if (d.stage === 'outline') {
+                        updateStreamItem(d.accumulated);
+                    }
+                });
+
                 // 科普绘本特有的事件监听
                 if (isStorybook) {
-                    eventSource.addEventListener('stream', (e) => {
-                        const d = JSON.parse(e.data);
-                        if (d.stage === 'outline') {
-                            updateStreamItem(d.accumulated);
-                        }
-                    });
 
                     eventSource.addEventListener('result', (e) => {
                         const d = JSON.parse(e.data);
@@ -1113,16 +1135,19 @@
                         addProgressItem(`❌ 错误: ${d.message}`, 'error');
                     }
                     document.getElementById('statusBadge').textContent = '错误';
+                    resetCreateBtn();
                 });
 
                 eventSource.onerror = () => {
                     if (eventSource && eventSource.readyState === EventSource.CLOSED) {
                         addProgressItem('🔌 连接已关闭');
+                        resetCreateBtn();
                     }
                 };
 
             } catch (error) {
                 addProgressItem(`❌ 请求失败: ${error.message}`, 'error');
+                resetCreateBtn();
             }
         });
 

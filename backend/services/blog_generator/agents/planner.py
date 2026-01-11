@@ -32,7 +32,8 @@ class PlannerAgent:
         target_audience: str,
         target_length: str,
         background_knowledge: str = "",
-        key_concepts: list = None
+        key_concepts: list = None,
+        on_stream: callable = None
     ) -> Dict[str, Any]:
         """
         生成文章大纲
@@ -44,6 +45,7 @@ class PlannerAgent:
             target_length: 目标长度
             background_knowledge: 背景知识
             key_concepts: 核心概念列表
+            on_stream: 流式回调函数 (delta, accumulated) -> None
             
         Returns:
             大纲字典
@@ -61,12 +63,38 @@ class PlannerAgent:
         )
         
         try:
-            response = self.llm.chat(
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"}
-            )
+            # 如果有流式回调且 LLM 支持流式，使用流式生成
+            has_stream = hasattr(self.llm, 'chat_stream')
             
-            outline = json.loads(response)
+            if on_stream and has_stream:
+                accumulated = ""
+                def on_chunk(delta, acc):
+                    nonlocal accumulated
+                    accumulated = acc
+                    on_stream(delta, acc)
+                
+                response = self.llm.chat_stream(
+                    messages=[{"role": "user", "content": prompt}],
+                    on_chunk=on_chunk
+                )
+            else:
+                response = self.llm.chat(
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
+            
+            # 解析 JSON（可能包含 markdown 代码块）
+            response_text = response.strip()
+            if '```json' in response_text:
+                start = response_text.find('```json') + 7
+                end = response_text.find('```', start)
+                response_text = response_text[start:end].strip()
+            elif '```' in response_text:
+                start = response_text.find('```') + 3
+                end = response_text.find('```', start)
+                response_text = response_text[start:end].strip()
+            
+            outline = json.loads(response_text)
             
             # 验证必要字段
             required_fields = ['title', 'sections']
@@ -88,12 +116,13 @@ class PlannerAgent:
             logger.error(f"大纲生成失败: {e}")
             raise
     
-    def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, state: Dict[str, Any], on_stream: callable = None) -> Dict[str, Any]:
         """
         执行大纲规划
         
         Args:
             state: 共享状态
+            on_stream: 流式回调函数 (delta, accumulated) -> None
             
         Returns:
             更新后的状态
@@ -107,7 +136,8 @@ class PlannerAgent:
                 target_audience=state.get('target_audience', 'intermediate'),
                 target_length=state.get('target_length', 'medium'),
                 background_knowledge=state.get('background_knowledge', ''),
-                key_concepts=state.get('key_concepts', [])
+                key_concepts=state.get('key_concepts', []),
+                on_stream=on_stream
             )
             
             state['outline'] = outline

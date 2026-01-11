@@ -227,6 +227,17 @@ class BlogService:
                 document_knowledge=document_knowledge or []
             )
             
+            # 设置大纲流式回调到 generator 实例
+            def on_outline_stream(delta, accumulated):
+                if task_manager:
+                    task_manager.send_event(task_id, 'stream', {
+                        'stage': 'outline',
+                        'delta': delta,
+                        'accumulated': accumulated
+                    })
+            
+            self.generator._outline_stream_callback = on_outline_stream
+            
             config = {"configurable": {"thread_id": f"blog_{task_id}"}}
             
             # 阶段进度映射
@@ -786,6 +797,27 @@ class LLMClientAdapter:
             return result
         else:
             raise Exception('LLM 调用失败')
+    
+    def chat_stream(self, messages, on_chunk=None):
+        """
+        流式调用 LLM 进行对话
+        
+        Args:
+            messages: 消息列表
+            on_chunk: 每收到一个 chunk 时的回调函数 (delta, accumulated)
+            
+        Returns:
+            完整的 LLM 响应文本
+        """
+        if hasattr(self.llm_service, 'chat_stream'):
+            result = self.llm_service.chat_stream(messages, on_chunk=on_chunk)
+            if result:
+                return result
+            else:
+                raise Exception('LLM 流式调用失败')
+        else:
+            # 降级为普通调用
+            return self.chat(messages)
 
 
 def get_blog_service() -> Optional[BlogService]:
