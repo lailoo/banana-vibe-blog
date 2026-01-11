@@ -547,6 +547,27 @@ def create_app(config_class=None):
             }
         })
     
+    # 取消任务
+    @app.route('/api/tasks/<task_id>/cancel', methods=['POST'])
+    def cancel_task(task_id: str):
+        """取消正在执行的任务"""
+        task_manager = get_task_manager()
+        
+        if task_manager.cancel_task(task_id):
+            return jsonify({
+                'success': True,
+                'message': '任务已取消',
+                'task_id': task_id
+            })
+        else:
+            task = task_manager.get_task(task_id)
+            if not task:
+                return jsonify({'success': False, 'error': '任务不存在'}), 404
+            return jsonify({
+                'success': False, 
+                'error': f'无法取消任务，当前状态: {task.status}'
+            }), 400
+    
     # ========== 知识源上传 API（二期） ==========
     
     import uuid
@@ -794,16 +815,20 @@ def create_app(config_class=None):
             # 准备文档知识（如果有上传文档）
             document_knowledge = []
             if document_ids:
+                logger.info(f"📄 接收到文档 ID 列表: {document_ids}")
                 db_service = get_db_service()
                 docs = db_service.get_documents_by_ids(document_ids)
+                logger.info(f"📄 从数据库查询到 {len(docs)} 个已就绪的文档")
                 for doc in docs:
-                    if doc.get('markdown_content'):
+                    markdown = doc.get('markdown_content', '')
+                    logger.info(f"📄 文档 {doc.get('filename', '')}: status={doc.get('status')}, markdown_length={len(markdown)}")
+                    if markdown:
                         document_knowledge.append({
                             'file_name': doc.get('filename', ''),
-                            'content': doc.get('markdown_content', ''),
+                            'content': markdown,
                             'source_type': 'document'
                         })
-                logger.info(f"加载文档知识: {len(document_knowledge)} 条")
+                logger.info(f"✅ 加载文档知识: {len(document_knowledge)} 条")
             
             # 创建任务
             task_manager = get_task_manager()

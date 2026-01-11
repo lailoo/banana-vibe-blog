@@ -137,8 +137,16 @@ class WriterAgent:
         
         logger.info(f"开始撰写内容: {len(sections_outline)} 个章节")
         
+        # 获取取消检查函数（如果有）
+        is_cancelled = state.get('_is_cancelled_func')
+        
         sections = []
         for i, section_outline in enumerate(sections_outline):
+            # 检查任务是否被取消
+            if is_cancelled and is_cancelled():
+                logger.info("⏹️ 任务已取消，停止章节撰写")
+                break
+            
             # 获取上下文
             prev_summary = ""
             next_preview = ""

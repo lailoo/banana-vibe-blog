@@ -180,12 +180,18 @@ class TaskManager:
     def cancel_task(self, task_id: str) -> bool:
         """取消任务"""
         task = self.tasks.get(task_id)
-        if task and task.status == "running":
+        if task and task.status in ("running", "pending"):
             task.status = "cancelled"
             task.updated_at = datetime.utcnow()
-            self.send_event(task_id, 'cancelled', {'task_id': task_id})
+            self.send_event(task_id, 'cancelled', {'task_id': task_id, 'message': '任务已取消'})
+            logger.info(f"任务已取消: {task_id}")
             return True
         return False
+    
+    def is_cancelled(self, task_id: str) -> bool:
+        """检查任务是否已取消"""
+        task = self.tasks.get(task_id)
+        return task is not None and task.status == "cancelled"
     
     def cleanup_task(self, task_id: str, delay: int = 300):
         """延迟清理任务 (默认 5 分钟后)"""

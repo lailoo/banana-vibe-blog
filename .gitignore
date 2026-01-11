@@ -87,5 +87,8 @@ backend/logs/
 *.swp
 
 # 文档目录（保留部署文档）
-# docs  # 允许 docs 目录
+docs  # 允许 docs 目录
 
+backend/test_*.py
+backend/test_*.md
+backend/data/

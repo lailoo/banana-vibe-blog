@@ -220,7 +220,16 @@ class ResearcherAgent:
         has_document = bool(document_knowledge)
         
         logger.info(f"🔍 开始收集素材: {topic}")
-        logger.info(f"📄 用户上传的文档知识: {len(document_knowledge)} 条")
+        
+        # 展示文档知识（标题 + 预览内容分开）
+        for doc in document_knowledge[:3]:
+            file_name = doc.get('file_name', '未知文档')
+            content = doc.get('content', '')
+            # 标题行
+            logger.info(f"📄 文档: {file_name} ({len(content)} 字)")
+            # 预览内容（前1000字，作为单独的日志）
+            preview = content[:1000] + '...' if len(content) > 1000 else content
+            logger.info(f"__DOC_PREVIEW__{preview}__END_PREVIEW__")
         
         # 1. 执行网络搜索（保持原有逻辑）
         logger.info(f"🌐 启动网络搜索...")

@@ -210,6 +210,7 @@ class FileParserService:
         }
         
         try:
+            logger.info(f"请求 MinerU 上传 URL: {self.upload_url_api}")
             response = requests.post(
                 self.upload_url_api,
                 headers=headers,
@@ -219,15 +220,26 @@ class FileParserService:
             response.raise_for_status()
             result = response.json()
             
+            logger.info(f"MinerU 响应: code={result.get('code')}, msg={result.get('msg')}")
+            
             if result.get("code") != 0:
-                return None, None, f"获取上传 URL 失败: {result.get('msg')}"
+                error_msg = f"获取上传 URL 失败: {result.get('msg')}"
+                logger.error(error_msg)
+                return None, None, error_msg
             
             batch_id = result["data"]["batch_id"]
             upload_url = result["data"]["file_urls"][0]
+            logger.info(f"成功获取上传 URL: batch_id={batch_id}")
             return batch_id, upload_url, None
             
         except requests.RequestException as e:
-            return None, None, f"网络请求失败: {e}"
+            error_msg = f"网络请求失败: {e}"
+            logger.error(error_msg, exc_info=True)
+            return None, None, error_msg
+        except Exception as e:
+            error_msg = f"解析响应失败: {e}"
+            logger.error(error_msg, exc_info=True)
+            return None, None, error_msg
     
     def _upload_file(self, file_path: str, upload_url: str) -> Optional[str]:
         """上传文件到 MinerU"""
@@ -675,7 +687,7 @@ class FileParserService:
             template = _jinja_env.get_template('document_summary.j2')
             prompt = template.render(max_length=max_length, content_preview=content_preview)
             
-            summary = llm_service.chat(prompt, model_type="text")
+            summary = llm_service.chat([{"role": "user", "content": prompt}])
             
             if summary:
                 # 确保不超过最大长度

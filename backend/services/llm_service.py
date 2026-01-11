@@ -173,6 +173,51 @@ class LLMService:
         except Exception as e:
             logger.error(f"LLM 流式调用失败: {e}")
             return None
+    
+    def chat_with_image(
+        self,
+        prompt: str,
+        image_base64: str,
+        mime_type: str = "image/jpeg"
+    ) -> Optional[str]:
+        """
+        发送包含图片的聊天请求（多模态）
+        
+        Args:
+            prompt: 文本提示词
+            image_base64: Base64 编码的图片数据
+            mime_type: 图片 MIME 类型 (image/jpeg, image/png 等)
+            
+        Returns:
+            模型响应文本，失败返回 None
+        """
+        try:
+            from langchain_core.messages import HumanMessage
+            
+            model = self.get_text_model()
+            if not model:
+                logger.error("模型不可用")
+                return None
+            
+            # 构建包含图片的消息
+            message = HumanMessage(
+                content=[
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_type};base64,{image_base64}"
+                        }
+                    }
+                ]
+            )
+            
+            response = model.invoke([message])
+            return response.content.strip() if response else None
+            
+        except Exception as e:
+            logger.warning(f"多模态调用失败: {e}")
+            return None
 
 
 # 全局 LLM 服务实例 (懒加载)

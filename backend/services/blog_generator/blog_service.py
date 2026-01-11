@@ -227,6 +227,10 @@ class BlogService:
                 document_knowledge=document_knowledge or []
             )
             
+            # 添加取消检查函数到 state，供各 Agent 使用
+            if task_manager:
+                initial_state['_is_cancelled_func'] = lambda: task_manager.is_cancelled(task_id)
+            
             # 设置大纲流式回调到 generator 实例
             def on_outline_stream(delta, accumulated):
                 if task_manager:
@@ -264,6 +268,15 @@ class BlogService:
             
             # 使用 stream 获取中间状态
             for event in self.generator.app.stream(initial_state, config):
+                # 检查任务是否被取消
+                if task_manager and task_manager.is_cancelled(task_id):
+                    logger.info(f"任务已取消，停止生成: {task_id}")
+                    task_manager.send_event(task_id, 'cancelled', {
+                        'task_id': task_id,
+                        'message': '任务已被用户取消'
+                    })
+                    return
+                
                 for node_name, state in event.items():
                     progress_info = stage_progress.get(node_name, (50, f'正在执行 {node_name}...'))
                     
@@ -280,11 +293,28 @@ class BlogService:
                             # 素材收集结果
                             background = state.get('background_knowledge', '')
                             key_concepts = state.get('key_concepts', [])
+                            knowledge_stats = state.get('knowledge_source_stats', {})
+                            
+                            # 准备文档知识预览（前500字）
+                            doc_knowledge = state.get('document_knowledge', [])
+                            doc_previews = []
+                            for doc in doc_knowledge[:3]:  # 最多展示3个文档
+                                content = doc.get('content', '')
+                                preview = content[:500] + '...' if len(content) > 500 else content
+                                doc_previews.append({
+                                    'file_name': doc.get('file_name', '未知文档'),
+                                    'preview': preview,
+                                    'total_length': len(content)
+                                })
+                            
                             task_manager.send_event(task_id, 'result', {
                                 'type': 'researcher_complete',
                                 'data': {
                                     'background_length': len(background),
                                     'key_concepts': key_concepts[:5] if key_concepts else [],
+                                    'document_count': knowledge_stats.get('document_count', 0),
+                                    'web_count': knowledge_stats.get('web_count', 0),
+                                    'document_previews': doc_previews,
                                     'message': f'素材收集完成，获取 {len(background)} 字背景资料'
                                 }
                             })
