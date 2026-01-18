@@ -23,7 +23,15 @@
 ## 图片类型处理
 
 ### flowchart (流程图)
-输出 Mermaid flowchart 代码，示例:
+输出 Mermaid flowchart 代码。
+
+**特别注意：如果描述中包含 ASCII 流程图（如 `+---+`、`|xxx|`、`--->` 等字符组成的图），你需要：**
+1. 仔细分析 ASCII 图中的节点和连接关系
+2. 将其准确转换为等效的 Mermaid flowchart
+3. 保留所有节点的文本内容
+4. 保留箭头方向和连接关系
+
+示例:
 ```mermaid
 flowchart TB
     A[开始] --> B{判断条件}

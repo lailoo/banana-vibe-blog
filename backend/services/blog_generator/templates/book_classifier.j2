@@ -1,0 +1,64 @@
+你是一个技术书籍的智能分类器。根据博客标题和摘要，将博客分类到不同的书籍中。
+
+【现有书籍】
+{{ existing_books_info }}
+{% if reference_books_info %}
+
+【参考：之前的书籍分类】
+{{ reference_books_info }}
+
+⚠️ **重要**：如果新分类的书籍与上述旧书籍主题相同或相似，请**直接使用原书籍名称**，不要重新起名！
+{% endif %}
+
+【待分类博客】
+{{ blogs_info }}
+
+【⚠️ 核心原则：同一主题必须合并】
+- **同一技术栈的所有博客必须归入同一本书**
+- 例如：所有 pytest 相关博客 → 《pytest 完全指南》（不管是性能测试、数据库测试还是 API 测试）
+- 例如：所有 LangChain 相关博客 → 《LangChain 实战教程》
+- 例如：所有 Triton 相关博客 → 《Triton 推理服务指南》
+
+【分类要求】
+1. 先识别博客标题中的**核心技术关键词**（如 pytest、LangChain、Redis、Triton、Agent 等）
+2. **将包含相同关键词的博客全部归入同一本书**
+3. 如果与现有书籍主题相关，归入现有书籍
+4. 只有与其他博客完全无关的独立主题才创建新书籍
+5. 主题分类（theme）可选值：ai, web, data, devops, security, general
+
+【分类原则】
+- **同一技术栈的博客必须归为一本书**（最重要！）
+  - pytest 性能测试、pytest 数据库测试、pytest API 测试、pytest Mock、pytest 插件 → 全部归入《pytest 测试实战》
+  - LangChain 入门、LangChain Agent、LangChain RAG → 全部归入《LangChain 开发指南》
+  - Triton 入门、Triton 部署、Triton 优化 → 全部归入《Triton 推理服务指南》
+- 相关领域的博客也应合并（如：AI Agent、Tool Calling、Skills 都属于 Agent 开发领域）
+- **独立主题可以单独成书**（如：一篇光电效应科普与技术博客无关，可以单独成书）
+- **绝对不要把同一技术栈的博客拆分成多本书！**
+
+【输出格式】
+返回 JSON 格式：
+{
+    "classifications": [
+        {
+            "blog_id": "...",
+            "blog_title": "...",
+            "target_book": "existing_book_id 或 new_book_1",
+            "reasoning": "分类理由"
+        }
+    ],
+    "new_books": [
+        {
+            "temp_id": "new_book_1",
+            "title": "书籍标题",
+            "theme": "ai|web|data|devops|security|general",
+            "description": "书籍简介"
+        }
+    ]
+}
+
+注意：
+- 只做分类，不需要生成大纲
+- 分类要准确，同一主题的博客必须归入同一本书
+- 新书籍的 temp_id 格式为 new_book_1, new_book_2 等
+
+直接返回 JSON，不需要其他说明。

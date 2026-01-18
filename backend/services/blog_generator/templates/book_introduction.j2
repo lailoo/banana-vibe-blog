@@ -1,0 +1,20 @@
+你是一个技术书籍编辑，请为以下书籍生成一段简洁的简介（100-200字）。
+
+【书籍信息】
+- 书名：{{ book_title }}
+- 主题：{{ book_theme }}
+- 章节数：{{ chapters_count }}
+
+【章节内容摘要】
+{% for chapter in chapters %}
+- 第{{ chapter.index }}章 {{ chapter.title }}
+{% for section in chapter.sections %}
+  - {{ section.index }} {{ section.title }}
+{% endfor %}
+{% endfor %}
+
+【要求】
+1. 简介要概括书籍的核心内容和价值
+2. 语言简洁专业，适合技术读者
+3. 突出书籍的特色和适用场景
+4. 直接返回简介文本，不需要其他说明

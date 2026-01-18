@@ -1,0 +1,102 @@
+你是一个技术书籍的智能编辑。现在需要根据新增的博客，决策：
+1. 每篇博客应该挂载到哪本书
+2. 如果没有合适的书，是否需要创建新书
+3. 如果挂载到现有书，**智能优化大纲结构**
+
+【现有书籍信息】
+{{ existing_books_info }}
+
+【新增博客信息】
+{{ new_blogs_info }}
+
+【决策要求】
+1. 分析每篇博客的主题和内容
+2. 判断是否与现有书籍的主题相关
+3. 如果相关，决定挂载到哪个章节（如果没有合适章节，添加新章节）
+4. 如果不相关，考虑是否创建新书籍
+5. 主题分类（theme）可选值：ai, web, data, devops, security, general
+
+【⭐ 大纲优化策略】
+当新博客加入现有书籍时，必须智能优化大纲：
+
+1. **合并相似章节**：如果新博客与现有章节主题相似，合并为系列
+   - 例如："Redis 入门" + "Redis 进阶" → "Redis 系列" 下的 1/2 篇
+   
+2. **调整章节顺序**：按照从入门到进阶的逻辑顺序重新排列
+   - 基础概念 → 核心功能 → 进阶技巧 → 实战案例
+   
+3. **拆分过大章节**：如果某章节内容过多（>5 小节），考虑拆分
+   
+4. **补充章节标题**：根据新增内容，优化章节标题使其更准确
+
+5. **系列文章标记**：相同主题的多篇博客标记为系列
+   - 在 section 中添加 `"type": "series"` 和 `"articles": [...]`
+
+【输出格式】
+返回 JSON 格式的决策结果：
+{
+    "assignments": [
+        {
+            "blog_id": "...",
+            "action": "assign_to_existing" | "create_new_book",
+            "book_id": "...",
+            "chapter_index": 1,
+            "chapter_title": "...",
+            "section_index": "1.1",
+            "section_title": "...",
+            "reasoning": "..."
+        }
+    ],
+    "new_books": [
+        {
+            "temp_id": "new_book_1",
+            "title": "...",
+            "theme": "ai|web|data|devops|security|general",
+            "description": "...",
+            "outline": {
+                "chapters": [
+                    {
+                        "index": 1,
+                        "title": "...",
+                        "sections": [
+                            {"index": "1.1", "title": "...", "blog_id": "..."}
+                        ]
+                    }
+                ]
+            }
+        }
+    ],
+    "outline_updates": [
+        {
+            "book_id": "...",
+            "optimization_actions": ["合并相似章节", "调整顺序"],
+            "new_outline": {
+                "chapters": [
+                    {
+                        "index": 1,
+                        "title": "章节标题",
+                        "sections": [
+                            {"index": "1.1", "title": "单篇标题", "blog_id": "...", "type": "single"},
+                            {
+                                "index": "1.2",
+                                "title": "系列标题",
+                                "type": "series",
+                                "articles": [
+                                    {"order": 1, "total": 2, "title": "第1篇", "blog_id": "..."},
+                                    {"order": 2, "total": 2, "title": "第2篇", "blog_id": "..."}
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
+
+注意：
+- outline_updates 中的 new_outline 必须包含该书籍的**所有章节**（包括现有的和新增的）
+- 系列文章使用 type: "series" 和 articles 数组
+- 单篇文章使用 type: "single"
+
+直接返回 JSON，不需要其他说明。

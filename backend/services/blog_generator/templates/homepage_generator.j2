@@ -1,0 +1,58 @@
+你是一位技术文档专家，请为以下书籍生成首页内容。
+
+## 书籍信息
+- 书名：{{ book.title }}
+- 主题：{{ book.theme }}
+- 简介：{{ book.description }}
+- 章节数：{{ book.chapters_count }}
+- 总字数：{{ book.total_word_count }}
+- 博客数：{{ book.blogs_count }}
+
+## 内容大纲
+{% for chapter in outline.chapters %}
+第{{ chapter.index }}章 {{ chapter.title }}
+{% for section in chapter.sections %}
+  - {{ section.title }}{% if section.type == 'series' %} ({{ section.articles|length }}篇系列){% endif %}
+
+{% endfor %}
+{% endfor %}
+
+## 任务
+请生成书籍首页的以下内容：
+
+1. **slogan**：一句话描述书籍核心价值（15-25字）
+2. **introduction**：项目简介（2-3段，200-300字，使用 Markdown 格式）
+3. **highlights**：3-5个项目亮点，每个包含 icon（emoji）、title、description
+4. **target_audience**：3-5类目标读者
+5. **prerequisites**：2-4个前置要求
+
+## 输出格式（JSON）
+```json
+{
+  "slogan": "一句话描述书籍核心价值",
+  "introduction": "项目简介，支持 Markdown 格式...",
+  "highlights": [
+    {"icon": "🎯", "title": "亮点标题", "description": "亮点描述（20-40字）"},
+    {"icon": "📚", "title": "亮点标题", "description": "亮点描述"},
+    {"icon": "🔧", "title": "亮点标题", "description": "亮点描述"}
+  ],
+  "target_audience": [
+    "目标读者1的描述",
+    "目标读者2的描述",
+    "目标读者3的描述"
+  ],
+  "prerequisites": [
+    "前置要求1",
+    "前置要求2"
+  ]
+}
+```
+
+注意：
+- slogan 要简洁有力，突出书籍核心价值
+- introduction 要有吸引力，说明书籍的定位和价值
+- highlights 的 icon 使用合适的 emoji
+- target_audience 要具体，说明读者特点和收益
+- prerequisites 要实用，帮助读者判断是否适合阅读
+
+直接返回 JSON，不要添加其他说明。

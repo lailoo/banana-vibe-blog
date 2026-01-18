@@ -1,0 +1,63 @@
+你是一位技术教程架构师，请为以下书籍设计完整的内容大纲。
+
+## 书籍信息
+- 书名：{{ book.title }}
+- 主题：{{ book.theme }}
+- 简介：{{ book.description }}
+
+## 已有章节
+{% for chapter in existing_chapters %}
+- 第{{ chapter.chapter_index }}章 {{ chapter.chapter_title }}
+  - {{ chapter.section_index }} {{ chapter.section_title }}{% if chapter.blog_id %} ✅{% endif %}
+
+{% endfor %}
+
+## 相关资料参考
+{% for result in search_results[:5] %}
+- {{ result.title }}
+{% endfor %}
+
+## 任务
+请设计一个完整的内容大纲，要求：
+1. **保留所有已有章节**（必须包含，标记为已有）
+2. **补充缺失的重要主题**（基于相关资料和行业最佳实践）
+3. **按照从入门到进阶的顺序组织**
+4. **每个章节包含 2-5 个小节**
+5. **小节标题要具体、有吸引力**
+6. **相似主题的章节合并为系列**（如多篇 Redis 入门文章合并为"Redis 入门系列"）
+
+## 输出格式（JSON）
+```json
+{
+  "chapters": [
+    {
+      "index": 1,
+      "title": "章节标题",
+      "sections": [
+        {
+          "index": "1.1",
+          "title": "小节标题",
+          "description": "简短描述（20字以内）",
+          "type": "single"
+        },
+        {
+          "index": "1.2",
+          "title": "系列标题",
+          "type": "series",
+          "articles": [
+            {"order": 1, "total": 2, "title": "文章1标题"},
+            {"order": 2, "total": 2, "title": "文章2标题"}
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+注意：
+- type 为 "single" 表示单篇文章
+- type 为 "series" 表示系列文章，需要包含 articles 数组
+- 已有的章节必须保留原标题
+
+直接返回 JSON，不要添加其他说明。
