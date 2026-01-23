@@ -13,37 +13,44 @@
 【待分类博客】
 {{ blogs_info }}
 
-【⚠️ 核心原则：同一主题必须合并】
-- **同一技术栈的所有博客必须归入同一本书**
-- 例如：所有 pytest 相关博客 → 《pytest 完全指南》（不管是性能测试、数据库测试还是 API 测试）
-- 例如：所有 LangChain 相关博客 → 《LangChain 实战教程》
-- 例如：所有 Triton 相关博客 → 《Triton 推理服务指南》
+【分类策略】
+将博客归类到合适的书籍，支持以下几种聚合方式：
+
+**1. 精确技术栈聚合**（最优先）
+- 标题包含相同技术名称 → 合并成一本书
+  - pytest 入门、pytest Mock、pytest 性能测试 → 《pytest 测试实战》
+  - Redis 入门、Redis 集群、Redis 缓存 → 《Redis 实战指南》
+  - LangChain Agent、LangChain RAG → 《LangChain 开发指南》
+
+**2. 相关主题聚合**（推荐）
+- 同一编程语言的不同层次/方向 → 可以合并
+  - Python 入门、Python 进阶、Python 技巧 → 《Python 编程指南》
+  - JavaScript 基础、ES6 新特性 → 《JavaScript 实战》
+  
+- 同一领域的相关技术 → 可以合并
+  - 深度学习入门、Transformer、Qwen-VL → 《AI 与深度学习》
+  - Docker 入门、K8s 部署 → 《容器化技术实战》
+
+**3. 独立成书**
+- 主题完全不相关的博客 → 独立成书或不归类
+- 单篇深度专题文章 → 可以独立成书
 
 【分类要求】
-1. 先识别博客标题中的**核心技术关键词**（如 pytest、LangChain、Redis、Triton、Agent 等）
-2. **将包含相同关键词的博客全部归入同一本书**
+1. 识别博客的核心主题（技术栈、编程语言、领域方向）
+2. 相同或相关主题优先合并
 3. 如果与现有书籍主题相关，归入现有书籍
-4. 只有与其他博客完全无关的独立主题才创建新书籍
+4. 主题完全不同的博客可以不归类（留空）
 5. 主题分类（theme）可选值：ai, web, data, devops, security, general
-
-【分类原则】
-- **同一技术栈的博客必须归为一本书**（最重要！）
-  - pytest 性能测试、pytest 数据库测试、pytest API 测试、pytest Mock、pytest 插件 → 全部归入《pytest 测试实战》
-  - LangChain 入门、LangChain Agent、LangChain RAG → 全部归入《LangChain 开发指南》
-  - Triton 入门、Triton 部署、Triton 优化 → 全部归入《Triton 推理服务指南》
-- 相关领域的博客也应合并（如：AI Agent、Tool Calling、Skills 都属于 Agent 开发领域）
-- **独立主题可以单独成书**（如：一篇光电效应科普与技术博客无关，可以单独成书）
-- **绝对不要把同一技术栈的博客拆分成多本书！**
 
 【输出格式】
 返回 JSON 格式：
 {
     "classifications": [
         {
-            "blog_id": "...",
-            "blog_title": "...",
-            "target_book": "existing_book_id 或 new_book_1",
-            "reasoning": "分类理由"
+            "blog_id": "task_xxx",
+            "blog_title": "博客标题",
+            "target_book": "new_book_1",
+            "reasoning": "归类理由"
         }
     ],
     "new_books": [
@@ -51,14 +58,20 @@
             "temp_id": "new_book_1",
             "title": "书籍标题",
             "theme": "ai|web|data|devops|security|general",
-            "description": "书籍简介"
+            "description": "书籍简介（1-2句话）"
         }
     ]
 }
 
+【示例】
+假设有博客：
+- Python 入门教程、Python 装饰器进阶 → 合并为《Python 编程指南》
+- 深度学习基础、Transformer 原理 → 合并为《深度学习入门》
+- Redis 缓存实战 → 独立为《Redis 实战》
+
 注意：
-- 只做分类，不需要生成大纲
-- 分类要准确，同一主题的博客必须归入同一本书
+- 相同/相关主题优先合并，提升书籍完整性
+- 主题差异过大的博客可以不归类
 - 新书籍的 temp_id 格式为 new_book_1, new_book_2 等
 
 直接返回 JSON，不需要其他说明。
