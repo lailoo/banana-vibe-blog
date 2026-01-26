@@ -200,6 +200,21 @@ class BlogService:
                         'message': msg
                     })
         
+        logger_names = [
+            'services.blog_generator.generator',
+            'services.blog_generator.agents.researcher',
+            'services.blog_generator.agents.planner',
+            'services.blog_generator.agents.writer',
+            'services.blog_generator.agents.questioner',
+            'services.blog_generator.agents.coder',
+            'services.blog_generator.agents.artist',
+            'services.blog_generator.agents.reviewer',
+            'services.blog_generator.agents.assembler',
+            'services.blog_generator.agents.search_coordinator',
+            'services.blog_generator.services.search_service',
+            'services.image_service',
+        ]
+        
         # 添加日志处理器
         sse_handler = None
         if task_manager:
@@ -208,20 +223,7 @@ class BlogService:
             sse_handler.setFormatter(logging.Formatter('%(message)s'))
             
             # 给所有 blog_generator 相关的 logger 添加处理器
-            for logger_name in [
-                'services.blog_generator.generator',
-                'services.blog_generator.agents.researcher',
-                'services.blog_generator.agents.planner',
-                'services.blog_generator.agents.writer',
-                'services.blog_generator.agents.questioner',
-                'services.blog_generator.agents.coder',
-                'services.blog_generator.agents.artist',
-                'services.blog_generator.agents.reviewer',
-                'services.blog_generator.agents.assembler',
-                'services.blog_generator.agents.search_coordinator',
-                'services.blog_generator.services.search_service',
-                'services.image_service',
-            ]:
+            for logger_name in logger_names:
                 logging.getLogger(logger_name).addHandler(sse_handler)
         
         # 等待 SSE 连接建立
@@ -631,19 +633,9 @@ class BlogService:
         finally:
             # 清理日志处理器
             if sse_handler:
-                for logger_name in [
-                    'services.blog_generator.generator',
-                    'services.blog_generator.agents.researcher',
-                    'services.blog_generator.agents.planner',
-                    'services.blog_generator.agents.writer',
-                    'services.blog_generator.agents.questioner',
-                    'services.blog_generator.agents.coder',
-                    'services.blog_generator.agents.artist',
-                    'services.blog_generator.agents.reviewer',
-                    'services.blog_generator.agents.assembler',
-                    'services.blog_generator.services.search_service',
-                ]:
+                for logger_name in logger_names:
                     logging.getLogger(logger_name).removeHandler(sse_handler)
+                sse_handler.close()
     
     def _generate_cover_image(
         self,
