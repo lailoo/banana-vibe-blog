@@ -36,6 +36,14 @@
 - 标题层级是否清晰？
 - 格式是否统一？
 
+### 6. 人性化程度 (额外加分项,最高20分)
+注意:此维度由 humanizer skill 自动检测,主要关注以下方面:
+- 是否避免了 AI 常用词汇(如 crucial, delve, landscape, pivotal, showcase 等)?
+- 是否使用自然的语言结构(避免过度使用 serves as, stands as 等)?
+- 是否有真实的人的声音(而非机械化的叙述)?
+- 是否避免了填充短语和过度对冲?
+- 是否避免了协作式语言(let's, we can, together 等)?
+
 ## 输出格式
 JSON 格式:
 {
@@ -59,3 +67,5 @@ JSON 格式:
 - high severity 问题必须修复
 - medium severity 问题建议修复
 - low severity 问题可选修复
+
+注意:最终得分会结合人性化检测结果(最高+20分),总分归一化到100分。
