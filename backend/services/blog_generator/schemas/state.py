@@ -81,7 +81,14 @@ class QuestionResult(BaseModel):
 class ReviewIssue(BaseModel):
     """审核问题"""
     section_id: str
-    issue_type: Literal["logic", "accuracy", "completeness", "image", "readability"]
+    issue_type: Literal[
+        "logic",
+        "accuracy",
+        "completeness",
+        "image",
+        "readability",
+        "humanization",
+    ]
     severity: Literal["high", "medium", "low"]
     description: str
     suggestion: str
@@ -165,6 +172,8 @@ class SharedState(TypedDict):
     review_score: int
     review_issues: List[dict]
     review_approved: bool
+    humanization_score: int
+    humanization_summary: str
     revision_count: int  # 修订次数，防止无限循环
     
     # 最终输出 (Assembler 输出)
@@ -257,6 +266,8 @@ def create_initial_state(
         review_score=0,
         review_issues=[],
         review_approved=False,
+        humanization_score=0,
+        humanization_summary="",
         revision_count=0,
         final_markdown=None,
         final_html=None,

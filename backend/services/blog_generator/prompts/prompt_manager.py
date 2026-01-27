@@ -7,6 +7,8 @@ import logging
 from typing import Any, Dict, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from ..constants import REVIEW_THRESHOLD
+
 logger = logging.getLogger(__name__)
 
 # 模板目录
@@ -157,7 +159,8 @@ class PromptManager:
         previous_section_summary: str = None,
         next_section_preview: str = None,
         background_knowledge: str = None,
-        audience_adaptation: str = "technical-beginner"
+        audience_adaptation: str = "technical-beginner",
+        humanizer_guide: str = "",
     ) -> str:
         """渲染 Writer Prompt"""
         return self.render(
@@ -166,7 +169,8 @@ class PromptManager:
             previous_section_summary=previous_section_summary,
             next_section_preview=next_section_preview,
             background_knowledge=background_knowledge,
-            audience_adaptation=audience_adaptation
+            audience_adaptation=audience_adaptation,
+            humanizer_guide=humanizer_guide or "",
         )
     
     def render_writer_enhance(
@@ -230,13 +234,17 @@ class PromptManager:
     def render_reviewer(
         self,
         document: str,
-        outline: dict
+        outline: dict,
+        humanizer_guide: str = "",
+        review_threshold: int = REVIEW_THRESHOLD,
     ) -> str:
         """渲染 Reviewer Prompt"""
         return self.render(
             'reviewer',
             document=document,
-            outline=outline
+            outline=outline,
+            humanizer_guide=humanizer_guide or "",
+            review_threshold=review_threshold,
         )
     
     def render_assembler_header(
