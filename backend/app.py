@@ -9,13 +9,17 @@ import io
 import json
 import zipfile
 import requests
-from contextvars import ContextVar
 from dotenv import load_dotenv
 from pathlib import Path
 from urllib.parse import urlparse, quote
 
 # 加载 .env 文件
 load_dotenv()
+
+from logging_config import setup_logging, task_id_context, get_logger
+
+# 先用环境变量做一次基础日志配置，避免 import 期日志裸奔
+setup_logging(os.getenv('LOG_LEVEL', 'INFO'))
 
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from flask_cors import CORS
@@ -36,49 +40,7 @@ from services.oss_service import get_oss_service, init_oss_service
 from services.video_service import get_video_service, init_video_service
 from services.publishers import Publisher
 
-# 创建任务 ID 上下文变量
-task_id_context: ContextVar[str] = ContextVar('task_id', default='')
-
-# 自定义日志格式化器，添加任务 ID
-class TaskIdFilter(logging.Filter):
-    def filter(self, record):
-        task_id = task_id_context.get()
-        if task_id:
-            record.task_id = f"[{task_id}]"
-        else:
-            record.task_id = ""
-        return True
-
-# 配置日志
-log_format = logging.Formatter('%(asctime)s %(task_id)s - %(name)s - %(levelname)s - %(message)s')
-
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
-
-# 添加任务 ID 过滤器
-task_id_filter = TaskIdFilter()
-root_logger.addFilter(task_id_filter)
-
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(log_format)
-console_handler.addFilter(task_id_filter)
-root_logger.addHandler(console_handler)
-
-# 尝试配置文件日志，如果失败则跳过（Vercel 环境是只读的）
-try:
-    LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
-    os.makedirs(LOG_DIR, exist_ok=True)
-    LOG_FILE = os.path.join(LOG_DIR, 'app.log')
-    file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(log_format)
-    root_logger.addHandler(file_handler)
-except (OSError, IOError):
-    # Vercel 环境是只读的，无法创建日志文件，仅使用控制台日志
-    pass
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_app(config_class=None):
@@ -90,9 +52,9 @@ def create_app(config_class=None):
         config_class = get_config()
     app.config.from_object(config_class)
     
-    # 设置日志级别
-    log_level = getattr(logging, app.config.get('LOG_LEVEL', 'INFO'))
-    logging.getLogger().setLevel(log_level)
+    # 根据配置再次校准日志级别（setup_logging 是幂等的）
+    log_level = app.config.get('LOG_LEVEL', 'INFO')
+    setup_logging(log_level)
     
     # CORS
     CORS(app, origins=app.config.get('CORS_ORIGINS', ['*']))
