@@ -51,13 +51,23 @@ class WriterAgent:
         Returns:
             章节内容
         """
+        humanizer_guide = ""
+        try:
+            # 懒加载 humanizer skill，失败不阻塞写作主流程
+            from ..skills.humanizer import get_writing_guide
+
+            humanizer_guide = get_writing_guide()
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"加载 Humanizer-zh 指南失败: {e}")
+
         pm = get_prompt_manager()
         prompt = pm.render_writer(
             section_outline=section_outline,
             previous_section_summary=previous_section_summary,
             next_section_preview=next_section_preview,
             background_knowledge=background_knowledge,
-            audience_adaptation=audience_adaptation
+            audience_adaptation=audience_adaptation,
+            humanizer_guide=humanizer_guide,
         )
         
         try:

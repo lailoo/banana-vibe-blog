@@ -360,30 +360,56 @@ class BlogGenerator:
         # 根据审核问题修订内容
         review_issues = state.get('review_issues', [])
         total_issues = len(review_issues)
-        
-        for idx, issue in enumerate(review_issues, 1):
+
+        if not review_issues:
+            return state
+
+        sections = state.get('sections', [])
+        global_issues = [i for i in review_issues if not i.get('section_id')]
+        section_issues = [i for i in review_issues if i.get('section_id')]
+
+        # 先处理有 section_id 的问题（精准修订）
+        for idx, issue in enumerate(section_issues, 1):
             section_id = issue.get('section_id', '')
-            issue_type = issue.get('issue_type', '')
             suggestion = issue.get('suggestion', '')
-            
-            # 找到对应章节并修订
-            for section in state.get('sections', []):
-                if section.get('id') == section_id:
-                    section_title = section.get('title', section_id)
-                    # 简单实现：将建议作为追问深化
-                    enhanced_content = self.writer.enhance_section(
-                        original_content=section.get('content', ''),
-                        vague_points=[{
-                            'location': section_title,
-                            'issue': issue.get('description', ''),
-                            'question': suggestion,
-                            'suggestion': '根据审核建议修改'
-                        }],
-                        section_title=section_title,
-                        progress_info=f"[{idx}/{total_issues}]"
-                    )
-                    section['content'] = enhanced_content
-                    break
+
+            for section in sections:
+                if section.get('id') != section_id:
+                    continue
+
+                section_title = section.get('title', section_id)
+                enhanced_content = self.writer.enhance_section(
+                    original_content=section.get('content', ''),
+                    vague_points=[{
+                        'location': section_title,
+                        'issue': issue.get('description', ''),
+                        'question': suggestion,
+                        'suggestion': '根据审核建议修改'
+                    }],
+                    section_title=section_title,
+                    progress_info=f"[{idx}/{total_issues}]"
+                )
+                section['content'] = enhanced_content
+                break
+
+        # 再处理全局问题（如 humanization），一次性施加到每个章节
+        if global_issues:
+            global_vague_points = [{
+                'location': '全文',
+                'issue': issue.get('description', ''),
+                'question': issue.get('suggestion', ''),
+                'suggestion': '按照 Humanizer-zh 指南去除 AI 写作痕迹'
+            } for issue in global_issues]
+
+            for section in sections:
+                section_title = section.get('title', section.get('id', ''))
+                enhanced_content = self.writer.enhance_section(
+                    original_content=section.get('content', ''),
+                    vague_points=global_vague_points,
+                    section_title=section_title,
+                    progress_info='[global]'
+                )
+                section['content'] = enhanced_content
         
         return state
     

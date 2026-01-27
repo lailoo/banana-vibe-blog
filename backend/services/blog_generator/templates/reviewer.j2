@@ -9,6 +9,11 @@
 {{ outline | tojson(indent=2) }}
 ```
 
+{% if humanizer_guide %}
+## Humanizer-zh 去 AI 味检测规则（必须遵守）
+{{ humanizer_guide }}
+{% endif %}
+
 ## 审核维度
 
 ### 1. 逻辑连贯性 (30分)
@@ -40,11 +45,13 @@
 JSON 格式:
 {
   "score": 0-100,
+  "humanization_score": 0-20,
+  "humanization_summary": "人性化评估总结 (1句话)",
   "approved": true/false,
   "issues": [
     {
       "section_id": "section_2",
-      "issue_type": "logic | accuracy | completeness | image | readability",
+      "issue_type": "logic | accuracy | completeness | image | readability | humanization",
       "severity": "high | medium | low",
       "description": "问题描述",
       "suggestion": "修改建议"
@@ -53,9 +60,14 @@ JSON 格式:
   "summary": "整体评价 (1-2句话)"
 }
 
+注意:
+- `score` 只评估常规质量维度（不含 humanization 加分）
+- `humanization_score` 严格依据 Humanizer-zh 规则打分
+- humanization 相关问题请使用 `issue_type = \"humanization\"`
+
 ## 判断标准
-- score >= 80: approved = true
-- score < 80: approved = false，需要列出 issues
+- score >= {{ review_threshold }}: approved = true
+- score < {{ review_threshold }}: approved = false，需要列出 issues
 - high severity 问题必须修复
 - medium severity 问题建议修复
 - low severity 问题可选修复
